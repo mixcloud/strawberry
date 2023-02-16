@@ -37,7 +37,6 @@ class BaseGraphQLTransportWSHandler(ABC):
         self.schema = schema
         self.debug = debug
         self.connection_init_wait_timeout = connection_init_wait_timeout
-        self.connection_init_timeout_task: Optional[asyncio.Task] = None
         self.connection_init_received = False
         self.connection_acknowledged = False
         self.subscriptions: Dict[str, AsyncGenerator] = {}
