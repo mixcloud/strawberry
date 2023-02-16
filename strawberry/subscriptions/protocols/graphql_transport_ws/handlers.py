@@ -66,19 +66,17 @@ class BaseGraphQLTransportWSHandler(ABC):
         """Handle the request this instance was created for"""
 
     async def handle(self) -> Any:
-        timeout_handler = self.handle_connection_init_timeout()
-        self.connection_init_timeout_task = asyncio.create_task(timeout_handler)
-        return await self.handle_request()
+        def close_on_timeout():
+            if self.connection_init_received:
+                return
 
-    async def handle_connection_init_timeout(self):
+            reason = "Connection initialisation timeout"
+            asyncio.create_task(self.close(code=4408, reason=reason))
+
         delay = self.connection_init_wait_timeout.total_seconds()
-        await asyncio.sleep(delay=delay)
+        asyncio.get_running_loop().call_later(delay, close_on_timeout)
 
-        if self.connection_init_received:
-            return
-
-        reason = "Connection initialisation timeout"
-        await self.close(code=4408, reason=reason)
+        return await self.handle_request()
 
     async def handle_message(self, message: dict):
         handler: Callable
