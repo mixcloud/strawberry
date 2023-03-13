@@ -35,6 +35,7 @@ from strawberry.arguments import StrawberryArgument
 from strawberry.exceptions.missing_return_annotation import MissingReturnAnnotationError
 from strawberry.field import _RESOLVER_TYPE, StrawberryField
 from strawberry.lazy_type import LazyType
+from strawberry.scalars import ID
 from strawberry.type import StrawberryList, StrawberryOptional, StrawberryType
 from strawberry.types.fields.resolver import StrawberryResolver
 from strawberry.types.types import TypeDefinition
@@ -122,7 +123,7 @@ class NodeField(RelayField):
                 "ids": StrawberryArgument(
                     python_name="ids",
                     graphql_name=None,
-                    type_annotation=StrawberryAnnotation(List[GlobalID]),
+                    type_annotation=StrawberryAnnotation(List[ID]),
                     description="The IDs of the objects.",
                 ),
             }
@@ -131,7 +132,7 @@ class NodeField(RelayField):
                 "id": StrawberryArgument(
                     python_name="id",
                     graphql_name=None,
-                    type_annotation=StrawberryAnnotation(GlobalID),
+                    type_annotation=StrawberryAnnotation(ID),
                     description="The ID of the object.",
                 ),
             }
@@ -158,8 +159,7 @@ class NodeField(RelayField):
         args: List[Any],
         kwargs: Dict[str, Any],
     ) -> AwaitableOrValue[Optional[Node]]:
-        gid = kwargs["id"]
-        assert isinstance(gid, GlobalID)
+        gid = GlobalID.from_id(kwargs["id"])
         return gid.resolve_type(info).resolve_node(
             gid.node_id,
             info=info,
@@ -173,7 +173,7 @@ class NodeField(RelayField):
         args: List[Any],
         kwargs: Dict[str, Any],
     ) -> AwaitableOrValue[List[Node]]:
-        gids: List[GlobalID] = kwargs["ids"]
+        gids: List[GlobalID] = [GlobalID.from_id(id) for id in kwargs["ids"]]
 
         nodes_map: DefaultDict[Type[Node], List[str]] = defaultdict(list)
         # Store the index of the node in the list of nodes of the same type
