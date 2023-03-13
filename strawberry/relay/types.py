@@ -40,6 +40,7 @@ from strawberry.field import field
 from strawberry.lazy_type import LazyType
 from strawberry.object_type import interface, type
 from strawberry.private import StrawberryPrivate
+from strawberry.scalars import ID  # noqa: TCH001
 from strawberry.type import StrawberryContainer
 from strawberry.types.types import TypeDefinition
 from strawberry.utils.aio import aenumerate, aislice, resolve_awaitable
@@ -48,7 +49,6 @@ from strawberry.utils.inspect import in_async_context
 from .utils import from_base64, to_base64
 
 if TYPE_CHECKING:
-    from strawberry.scalars import ID
     from strawberry.schema.schema import Schema
     from strawberry.types.info import Info
     from strawberry.utils.await_maybe import AwaitableOrValue
@@ -382,7 +382,7 @@ class Node:
 
     @field(name="id", description="The Globally Unique ID of this object")
     @classmethod
-    def _id(cls, root: Node, info: Info) -> GlobalID:
+    def _id(cls, root: Node, info: Info) -> ID:
         # FIXME: We want to support both integration objects that doesn't define
         # a resolve_id and also the ones that does override it. Is there a better
         # way of handling this?
@@ -416,7 +416,7 @@ class Node:
             )
 
         # If node_id is not str, GlobalID will raise an error for us
-        return GlobalID(type_name=type_name, node_id=str(node_id))
+        return str(GlobalID(type_name=type_name, node_id=str(node_id)))
 
     @classmethod
     def resolve_id(
