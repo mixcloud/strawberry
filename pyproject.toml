@@ -137,7 +137,7 @@ tests/codegen/snapshots/
 addopts = "-s --emoji --mypy-ini-file=mypy.ini --benchmark-disable"
 DJANGO_SETTINGS_MODULE = "tests.django.django_settings"
 testpaths = ["tests/"]
-markers = ["django", "starlette", "channels"]
+markers = ["django", "starlette", "channels", "relay"]
 asyncio_mode = "auto"
 filterwarnings = [
     "ignore::DeprecationWarning:strawberry.*.resolver",
