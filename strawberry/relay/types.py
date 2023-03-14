@@ -135,6 +135,9 @@ class GlobalID:
 
         return cls(type_name=type_name, node_id=node_id)
 
+    def to_id(self) -> ID:
+        return ID(str(self))
+
     def resolve_type(self, info: Info) -> Type[Node]:
         """Resolve the internal type name to its type itself.
 
@@ -405,18 +408,18 @@ class Node:
 
         if inspect.isawaitable(node_id):
             return cast(
-                GlobalID,
+                ID,
                 resolve_awaitable(
                     node_id,
                     lambda resolved: GlobalID(
                         type_name=type_name,
                         node_id=str(resolved),
-                    ),
+                    ).to_id(),
                 ),
             )
 
         # If node_id is not str, GlobalID will raise an error for us
-        return str(GlobalID(type_name=type_name, node_id=str(node_id)))
+        return GlobalID(type_name=type_name, node_id=str(node_id)).to_id()
 
     @classmethod
     def resolve_id(
