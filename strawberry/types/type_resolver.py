@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import dataclasses
 import sys
-from typing import TYPE_CHECKING, Dict, List, Type, TypeVar
+from typing import Dict, List, Type, TypeVar
+from typing_extensions import get_args, get_origin
 
 from strawberry.annotation import StrawberryAnnotation
 from strawberry.exceptions import (
@@ -10,12 +11,48 @@ from strawberry.exceptions import (
     FieldWithResolverAndDefaultValueError,
     PrivateStrawberryFieldError,
 )
+from strawberry.field import StrawberryField
 from strawberry.private import is_private
 from strawberry.unset import UNSET
 from strawberry.utils.inspect import get_specialized_type_var_map
 
-if TYPE_CHECKING:
-    from strawberry.field import StrawberryField
+
+def _get_field_for_type(type_: Type) -> Type[StrawberryField]:
+    # Deferred import to avoid import cycles
+    from strawberry.relay import Connection, ConnectionField, Node, NodeField
+
+    # Supoort for "foo: Node"
+    if isinstance(type_, type) and issubclass(type_, Node):
+        return NodeField
+
+    # Support for "foo: SpecializedConnection"
+    if isinstance(type_, type) and issubclass(type_, Connection):
+        return ConnectionField
+
+    type_origin = get_origin(type_)
+
+    # Support for "foo: Connection[Foo]"
+    if isinstance(type_origin, type) and issubclass(
+        type_origin,
+        Connection,
+    ):
+        return ConnectionField
+
+    type_args = get_args(type_)
+
+    # Support for "foo: Optional[Node]" and "foo: List[Node]"
+    if any(isinstance(arg, type) and issubclass(arg, Node) for arg in type_args):
+        return NodeField
+
+    # Support for "foo: List[Optional[Node]]"
+    if isinstance(type_origin, type) and issubclass(type_origin, List):
+        if any(
+            isinstance(arg, type) and issubclass(arg, Node)
+            for arg in get_args(type_args[0])
+        ):
+            return NodeField
+
+    return StrawberryField
 
 
 def _get_fields(cls: Type) -> List[StrawberryField]:
@@ -51,9 +88,6 @@ def _get_fields(cls: Type) -> List[StrawberryField]:
     passing a named function (i.e. not an anonymous lambda) to strawberry.field
     (typically as a decorator).
     """
-    # Deferred import to avoid import cycles
-    from strawberry.field import StrawberryField
-
     fields: Dict[str, StrawberryField] = {}
 
     # before trying to find any fields, let's first add the fields defined in
@@ -157,7 +191,8 @@ def _get_fields(cls: Type) -> List[StrawberryField]:
                     )
 
             # Create a StrawberryField, for fields of Types #1 and #2a
-            field = StrawberryField(
+            field_class = _get_field_for_type(field_type)
+            field = field_class(
                 python_name=field.name,
                 graphql_name=None,
                 type_annotation=StrawberryAnnotation(
