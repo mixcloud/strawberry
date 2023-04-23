@@ -14,9 +14,9 @@ def transform_subscription_iterator(it: AsyncIterator[Any]) -> AsyncIterator[Any
     if hasattr(it, "_close_event"):
         try:
             return iterate_and_map(it.iterator, it.callback)  # type: ignore
-        except AttributeError:
+        except AttributeError:  # pragma: no cover
             pass
-    return it
+    return it  # pragma: no cover
 
 
 async def iterate_and_map(
