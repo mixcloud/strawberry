@@ -1,10 +1,10 @@
 from inspect import isawaitable
-from typing import Any, AsyncIterator, Callable
+from typing import Any, AsyncIterator, Callable, AsyncGenerator
 
 
 # The following method can be employed until graphql core implements a better
 # itererator object.
-def transform_subscription_iterator(it: AsyncIterator[Any]) -> AsyncIterator[Any]:
+def transform_subscription_iterator(it: AsyncIterator[Any]) -> AsyncGenerator[Any, Any]:
     """
     Detect if the iterator is a MapAsyncIterator from graphql core which
     implements its own complicated close semantics and iterates via an

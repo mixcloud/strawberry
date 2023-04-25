@@ -1,5 +1,4 @@
 from __future__ import annotations
-
 import warnings
 from functools import lru_cache
 from typing import (
@@ -14,6 +13,7 @@ from typing import (
     Union,
     cast,
 )
+from ..subscriptions.protocols.common import transform_subscription_iterator
 
 from graphql import (
     GraphQLNamedType,
@@ -44,9 +44,11 @@ from .config import StrawberryConfig
 from .execute import execute, execute_sync
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
+    
     from graphql import ExecutionContext as GraphQLExecutionContext
     from graphql import ExecutionResult as GraphQLExecutionResult
-
+    
     from strawberry.custom_scalar import ScalarDefinition, ScalarWrapper
     from strawberry.directive import StrawberryDirective
     from strawberry.enum import EnumDefinition
@@ -295,8 +297,8 @@ class Schema(BaseSchema):
         context_value: Optional[Any] = None,
         root_value: Optional[Any] = None,
         operation_name: Optional[str] = None,
-    ) -> Union[AsyncIterator[GraphQLExecutionResult], GraphQLExecutionResult]:
-        return await subscribe(
+    ) -> Union[AsyncGenerator[GraphQLExecutionResult, Any], GraphQLExecutionResult]:
+        result = await subscribe(
             self._schema,
             parse(query),
             root_value=root_value,
@@ -304,6 +306,9 @@ class Schema(BaseSchema):
             variable_values=variable_values,
             operation_name=operation_name,
         )
+        if isinstance(result, AsyncIterator):
+            return transform_subscription_iterator(result)
+        return result
 
     def _warn_for_federation_directives(self):
         """Raises a warning if the schema has any federation directives."""
